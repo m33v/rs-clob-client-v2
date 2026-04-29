@@ -518,7 +518,7 @@ pub struct MakerOrder {
     pub maker_address: Address,
     pub matched_amount: Decimal,
     pub price: Decimal,
-    pub fee_rate_bps: Decimal,
+    // pub fee_rate_bps: Decimal,
     pub asset_id: U256,
     pub outcome: String,
     pub side: Side,

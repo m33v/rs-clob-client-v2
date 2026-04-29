@@ -335,6 +335,7 @@ pub struct Event {
     pub away_team_name: Option<String>,
     pub home_team_name: Option<String>,
     pub event_metadata: Option<serde_json::Value>,
+    pub teams: Option<serde_json::Value>,
 }
 
 /// A prediction market.
@@ -516,6 +517,8 @@ pub struct Market {
     pub clob_rewards: Option<Vec<ClobReward>>,
     pub category_mailchimp_tag: Option<String>,
     pub subcategory: Option<String>,
+    pub fee_type: Option<serde_json::Value>,
+    pub fee_schedule: Option<serde_json::Value>,
 }
 
 /// CLOB rewards configuration for a market.
