@@ -274,14 +274,12 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
         }
 
         let minimum_tick_size = match self.tick_size {
-            None => {
-                self
-                    .client
-                    .tick_size(token_id)
-                    .await?
-                    .minimum_tick_size
-                    .as_decimal()
-            },
+            None => self
+                .client
+                .tick_size(token_id)
+                .await?
+                .minimum_tick_size
+                .as_decimal(),
             Some(tick_size) => tick_size,
         };
 
@@ -554,14 +552,12 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
         };
 
         let minimum_tick_size = match self.tick_size {
-            None => {
-                self
-                    .client
-                    .tick_size(token_id)
-                    .await?
-                    .minimum_tick_size
-                    .as_decimal()
-            },
+            None => self
+                .client
+                .tick_size(token_id)
+                .await?
+                .minimum_tick_size
+                .as_decimal(),
             Some(tick_size) => tick_size,
         };
 
@@ -580,9 +576,7 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
                 // V2 uses `/clob-markets/{id}` `fd` (rate + exponent); `/fee-rate`
                 // only exposes V1 bps and would silently mis-size V2 orders.
                 let fee = match self.fee_info {
-                    None => {
-                        self.client.fee_info(token_id).await?
-                    },
+                    None => self.client.fee_info(token_id).await?,
                     Some(fee) => fee,
                 };
                 let fee_rate = fee.rate;
