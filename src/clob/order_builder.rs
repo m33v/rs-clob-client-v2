@@ -12,7 +12,7 @@ use crate::auth::Kind as AuthKind;
 use crate::auth::state::Authenticated;
 use crate::clob::Client;
 use crate::clob::types::request::OrderBookSummaryRequest;
-use crate::clob::types::response::PostOrderResponse;
+use crate::clob::types::response::{BuilderFeeRateResponse, FeeInfo, PostOrderResponse};
 use crate::clob::types::{
     Amount, AmountInner, OrderPayload, OrderType, OrderV1, OrderV2, Side, SignableOrder,
     SignatureType,
@@ -60,6 +60,10 @@ pub struct OrderBuilder<OrderKind, K: AuthKind> {
     pub(crate) nonce: Option<u64>,
     /// V1-only: caller-specified fee rate in bps. Must match the market rate when both are set.
     pub(crate) fee_rate_bps: Option<u32>,
+    /// to avoid await on build
+    pub(crate) tick_size: Option<Decimal>,
+    pub(crate) fee_info: Option<FeeInfo>,
+    pub(crate) builder_fee_rate: Option<BuilderFeeRateResponse>,
     pub(crate) _kind: PhantomData<OrderKind>,
 }
 
@@ -142,6 +146,12 @@ impl<OrderKind, K: AuthKind> OrderBuilder<OrderKind, K> {
         self
     }
 
+    #[must_use]
+    pub fn tick_size(mut self, tick_size: Decimal) -> Self {
+        self.tick_size = Some(tick_size);
+        self
+    }
+
     /// Assembles the [`OrderPayload`] for the server's current protocol version.
     ///
     /// The caller supplies values common to both versions; V1/V2-specific fields
@@ -156,7 +166,7 @@ impl<OrderKind, K: AuthKind> OrderBuilder<OrderKind, K> {
         salt: u64,
         expiration: U256,
     ) -> Result<OrderPayload> {
-        let version = self.client.resolve_version(false).await?;
+        let version = 2; // self.client.resolve_version(false).await?;
         let maker = self.funder.unwrap_or(self.signer);
 
         match version {
@@ -263,12 +273,17 @@ impl<K: AuthKind> OrderBuilder<Limit, K> {
             )));
         }
 
-        let minimum_tick_size = self
-            .client
-            .tick_size(token_id)
-            .await?
-            .minimum_tick_size
-            .as_decimal();
+        let minimum_tick_size = match self.tick_size {
+            None => {
+                self
+                    .client
+                    .tick_size(token_id)
+                    .await?
+                    .minimum_tick_size
+                    .as_decimal()
+            },
+            Some(tick_size) => tick_size,
+        };
 
         let decimals = minimum_tick_size.scale();
 
@@ -421,6 +436,18 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
         self
     }
 
+    #[must_use]
+    pub fn fee_info(mut self, fee_info: FeeInfo) -> Self {
+        self.fee_info = Some(fee_info);
+        self
+    }
+
+    #[must_use]
+    pub fn builder_fee_rate(mut self, builder_fee_rate: BuilderFeeRateResponse) -> Self {
+        self.builder_fee_rate = Some(builder_fee_rate);
+        self
+    }
+
     // Attempts to calculate the market price from the top of the book for the particular token.
     // - Uses an orderbook depth search to find the cutoff price:
     //   - BUY + USDC: walk asks until notional >= USDC
@@ -526,12 +553,17 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             None => self.calculate_price(order_type.clone()).await?,
         };
 
-        let minimum_tick_size = self
-            .client
-            .tick_size(token_id)
-            .await?
-            .minimum_tick_size
-            .as_decimal();
+        let minimum_tick_size = match self.tick_size {
+            None => {
+                self
+                    .client
+                    .tick_size(token_id)
+                    .await?
+                    .minimum_tick_size
+                    .as_decimal()
+            },
+            Some(tick_size) => tick_size,
+        };
 
         let decimals = minimum_tick_size.scale();
 
@@ -547,12 +579,20 @@ impl<K: AuthKind> OrderBuilder<Market, K> {
             (Side::Buy, AmountInner::Usdc(raw), Some(balance)) => {
                 // V2 uses `/clob-markets/{id}` `fd` (rate + exponent); `/fee-rate`
                 // only exposes V1 bps and would silently mis-size V2 orders.
-                let fee = self.client.fee_info(token_id).await?;
+                let fee = match self.fee_info {
+                    None => {
+                        self.client.fee_info(token_id).await?
+                    },
+                    Some(fee) => fee,
+                };
                 let fee_rate = fee.rate;
                 let fee_exponent = Decimal::from(fee.exponent);
                 let builder_taker_fee = match self.builder_code {
                     Some(code) if code != B256::ZERO => {
-                        let rate = self.client.builder_fee_rate(code).await?;
+                        let rate = match self.builder_fee_rate.clone() {
+                            None => self.client.builder_fee_rate(code).await?,
+                            Some(rate) => rate,
+                        };
                         Decimal::from(rate.builder_taker_fee_rate_bps) / Decimal::from(10_000_u32)
                     }
                     _ => Decimal::ZERO,
