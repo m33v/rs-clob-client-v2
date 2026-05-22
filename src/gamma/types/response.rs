@@ -336,6 +336,7 @@ pub struct Event {
     pub home_team_name: Option<String>,
     pub event_metadata: Option<serde_json::Value>,
     pub teams: Option<serde_json::Value>,
+    pub sport: Option<serde_json::Value>,
 }
 
 /// A prediction market.
@@ -371,7 +372,7 @@ pub struct Market {
     #[serde_as(as = "Option<JsonString>")]
     pub outcomes: Option<Vec<String>>,
     #[serde_as(as = "Option<JsonString>")]
-    pub outcome_prices: Option<Vec<Decimal>>,
+    pub outcome_prices: Option<Option<Vec<Decimal>>>, // can be: undefined (absent), "null", "[0.9, 0.1]"
     pub volume: Option<Decimal>,
     pub active: Option<bool>,
     pub market_type: Option<String>,
