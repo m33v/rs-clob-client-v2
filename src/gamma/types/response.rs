@@ -524,6 +524,7 @@ pub struct Market {
     pub fee_schedule: Option<serde_json::Value>,
     pub combo_status: Option<serde_json::Value>,
     pub position_ids: Option<Vec<U256>>,
+    pub market_metadata: Option<serde_json::Value>,
 }
 
 /// CLOB rewards configuration for a market.
