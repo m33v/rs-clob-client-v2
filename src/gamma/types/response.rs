@@ -337,7 +337,8 @@ pub struct Event {
     pub event_metadata: Option<serde_json::Value>,
     pub teams: Option<serde_json::Value>,
     pub sport: Option<serde_json::Value>,
-    pub r#$schema: Option<serde_json::Value>,
+    #[serde(rename = "$schema")]
+    pub schema: Option<serde_json::Value>,
 }
 
 /// A prediction market.
