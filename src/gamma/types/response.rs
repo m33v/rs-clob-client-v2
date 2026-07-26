@@ -520,6 +520,7 @@ pub struct Market {
     pub subcategory: Option<String>,
     pub fee_type: Option<serde_json::Value>,
     pub fee_schedule: Option<serde_json::Value>,
+    pub combo_status: Option<serde_json::Value>,
 }
 
 /// CLOB rewards configuration for a market.
