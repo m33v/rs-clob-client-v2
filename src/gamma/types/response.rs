@@ -339,6 +339,7 @@ pub struct Event {
     pub sport: Option<serde_json::Value>,
     #[serde(rename = "$schema")]
     pub schema: Option<serde_json::Value>,
+    pub version: Option<serde_json::Value>,
 }
 
 /// A prediction market.
@@ -525,6 +526,7 @@ pub struct Market {
     pub combo_status: Option<serde_json::Value>,
     pub position_ids: Option<Vec<U256>>,
     pub market_metadata: Option<serde_json::Value>,
+    pub version: Option<serde_json::Value>,
 }
 
 /// CLOB rewards configuration for a market.
