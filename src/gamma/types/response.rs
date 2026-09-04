@@ -527,6 +527,8 @@ pub struct Market {
     pub position_ids: Option<Vec<U256>>,
     pub market_metadata: Option<serde_json::Value>,
     pub version: Option<serde_json::Value>,
+    pub crypto_market_config_id: Option<serde_json::Value>,
+    pub crypto_market_config: Option<serde_json::Value>,
 }
 
 /// CLOB rewards configuration for a market.
